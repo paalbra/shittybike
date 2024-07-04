@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Quick Start - Leaflet</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha256-8glLv2FBs1lyLE/kVOtsSw8OQswQzHr5IfwVj864ZTk=" crossorigin=""></script>
+<script src="https://unpkg.com/chart.js@4.4.2/dist/chart.umd.js" integrity="x+LL+wNI+ZAd7MSX8xbB/qhCAgm2EEEv+4j9PVFvnTA=" crossorigin=""></script>
+<script src="https://unpkg.com/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="OicqMwMSGwMjHDwfCxIaOxA+HDolBQ07Fg8GEBs1FyEpFBsdAhMIGxUhBQ==" crossorigin=""></script>
+
+<style>
+html, body {
+	height: 100%;
+	margin: 0;
+    padding: 0;
+}
+#container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+#map {
+    flex: 1;
+}
+#footer {
+    height: 300px;
+    padding: 1em;
+}
+.popup-content {
+    width: 300px;
+    height: 200px;
+}
+</style>
+
+
+</head>
+<body>
+<div id="container">
+    <div id="map"></div>
+    <div id="footer">
+        <canvas id="chart"></canvas>
+    </div>
+</div>
+<script>
+createChart = (elementId) => {
+    // Create an empty line/timeseries chart. elementId should be the id of the canvas.
+
+    var ctx = document.getElementById(elementId).getContext("2d");
+    var chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            datasets: []
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                },
+                x: {
+                    type: "time",
+                    time: {
+                        unit: "day"
+                    }
+                }
+            },
+            maintainAspectRatio: false,
+            //height: 300,
+            animation: false
+        }
+    });
+
+    return chart;
+}
+
+updateChart = (chart, label, data) => {
+    // Update the chart with new data and fix rescale of axises.
+    // data should be an array of elements, e.g.: {x: '1970-01-01', y: 42}
+    chart.data.datasets[0] = {
+        data: data,
+        label: label,
+        borderWidth: 1,
+        pointRadius: 1
+    }
+    chart.options.scales.y.max = Math.max(...data.map(e => e.y)) + 5;
+
+    let date = new Date();
+    chart.options.scales.x.max = date.toISOString().slice(0, 16);
+    date.setMonth(date.getMonth() - 2);
+    chart.options.scales.x.min = date.toISOString().slice(0, 16);
+
+    //chart.options.scales.x.min = data[0].x;
+    //chart.options.scales.x.max = data[data.length - 1].x;
+
+    //chart.options.scales.x.min = "2024-02-01T00:00";
+    //chart.options.scales.x.max = "2024-04-01T00:00";
+
+    chart.update();
+};
+
+// Initialize map
+const map = L.map("map").setView([59.9287, 10.7724], 13);
+const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+}).addTo(map);
+const chart = createChart("chart");
+
+fetch("data.json")
+    .then(response => response.json())
+    .then(docks => {
+        console.log(docks);
+
+        Object.entries(docks).forEach(([key, dock]) => {
+            L.marker([dock.lat, dock.lng], {
+                    data: dock.data,
+                    title: dock.title
+                })
+                .addTo(map)
+                .on("click", (e) => {
+                    let chartData = e.target.options.data;
+                    let label = e.target.options.title;
+                    updateChart(chart, label, chartData);
+                });
+        });
+    })
+    .catch(error => {
+        console.error("Error loading the JSON file:", error);
+    });
+</script>
+
+</body>
+</html>
