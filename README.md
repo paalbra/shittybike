@@ -17,6 +17,7 @@ If you only could view this data on some kind of map, with some kind of graph...
 Well. Now you can! With this low effort/work in progress thing.
 
 ```bash
+mkdir data
 bash get_data.sh
 # Get some data for a while
 gunzip ./data/*.gz
