@@ -1,3 +1,4 @@
+import datetime
 import glob
 import json
 import re
@@ -48,11 +49,16 @@ if sys.argv[1] == "data":
 
     new_data = {}
 
+    since = (datetime.datetime.now() - datetime.timedelta(days=60)).isoformat()
+
     for index, filename in enumerate(filenames):
         match = re.match(r"./data/json_(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)\d\d.json", filename)
         year, month, day = match.group(1), match.group(2), match.group(3)
         hour, minute = match.group(4), match.group(5)
         timestamp = f"{year}-{month}-{day}T{hour}:{minute}"
+
+        if timestamp < since:
+            continue
 
         with open(filename) as f:
             content = f.read()
